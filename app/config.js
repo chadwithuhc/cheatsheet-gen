@@ -14,12 +14,20 @@ require.config({
 			"name": "jquery.serializejson",
 			"location": "../vendor/js/libs",
 			"main": "jquery.serializejson.min.js"
+		},
+		{
+			"name": "backbone-relational",
+			"location": "../vendor/js/libs",
+			"main": "backbone-relational.js"
 		}
 	],
 
 	shim: {
 		"jquery.serializejson": {
 			"deps": ["jquery"]
+		},
+		"backbone-relational": {
+			"deps": ["backbone"]
 		}
 	}
 

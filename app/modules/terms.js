@@ -5,13 +5,14 @@ define([
 function(app) {
 
 	// Create a new module.
-	var Terms = app.module();
+	var Terms = window.Terms = app.module();
 
 	// Default Model.
-	Terms.Model = Backbone.Model.extend({
+	Terms.Model = Backbone.RelationalModel.extend({
 		defaults: {
 			term: null,
-			description: null
+			description: null,
+			order: 0
 		}
 	});
 
@@ -24,17 +25,14 @@ function(app) {
 		tagName: 'div',
 		className: 'terms',
 		initialize: function () {
-			this.collection.forEach(this.addTerm, this);
-			this.collection.on('add', this.appendTerm, this);
+			this.collection.each(this.addItem, this);
+			this.listenTo(this.collection, 'add', this.appendItem);
 		},
-		appendTerm: function (model) {
+		appendItem: function (model) {
 			this.$el.append(new Terms.Views.TermView({ model: model }).render().view.$el);
 		},
-		addTerm: function (model) {
+		addItem: function (model) {
 			this.insertView(new Terms.Views.TermView({ model: model }));
-		},
-		serialize: function() {
-			console.log({ terms: this.collection.toJSON() });
 		}
 	});
 
@@ -84,7 +82,5 @@ function(app) {
 		}
 	});
 
-	// Return the module for AMD compliance.
 	return Terms;
-
 });
