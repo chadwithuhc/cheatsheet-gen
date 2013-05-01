@@ -1,12 +1,13 @@
 define([
 	'app',
 	
+	'modules/ui',
 	'modules/terms',
 	'modules/groups',
 	'modules/sheets'
 ],
 
-function(app, Terms, Groups, Sheets) {
+function(app, UI, Terms, Groups, Sheets) {
 
 	// Defining the application router, you can attach sub routers here.
 	var Router = Backbone.Router.extend({
@@ -46,7 +47,8 @@ function(app, Terms, Groups, Sheets) {
 			]);
 			
 			app.useLayout('layout').setViews({
-				'#app': new Sheets.Views.Layout({ collection: sheets })
+				'#sheet-nav': new UI.SheetNav({ collection: sheets }),
+				'#stage': new Sheets.Views.Layout({ collection: sheets })
 			}).render();
 			
 			window.sheets = sheets;

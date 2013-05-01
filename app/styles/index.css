@@ -1,6 +1,17 @@
-/*-- HTML5 Boilerplate. -----------------------------------------------------*/
+@import 'bootstrap.min.css';
 
-@import "../../vendor/h5bp/css/normalize.css";
-@import "../../vendor/h5bp/css/main.css";
+/*@ Global */
+body { background: darkslateblue }
+#main { padding: 0 2em; display: block }
+#cs-title { font-size: 20px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 30px #999; color: darkslateblue }
+#app { background: #fff; border-radius: 10px }
 
-/*-- Application stylesheets. -----------------------------------------------*/
+/*@ Sheets */
+#sheet-nav { background: #eee; padding: 10px 10px 0 }
+
+/*@ Groups */
+
+
+/*@ Terms */
+
+

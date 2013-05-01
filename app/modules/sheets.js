@@ -1,9 +1,10 @@
 define([
 	'app',
+	'modules/ui',
 	'modules/groups'
 ],
 
-function(app, Groups) {
+function(app, UI, Groups) {
 
 	// Create a new module.
 	var Sheets = window.Sheets = app.module();

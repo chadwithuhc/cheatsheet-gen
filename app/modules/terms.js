@@ -1,8 +1,9 @@
 define([
-	"app"
+	'app',
+	'modules/ui'
 ],
 
-function(app) {
+function(app, UI) {
 
 	// Create a new module.
 	var Terms = window.Terms = app.module();
