@@ -1,7 +1,8 @@
 define([
 	'backbone.layoutmanager',
 	'backbone-relational',
-	'jquery.serializejson'
+	'jquery.serializejson',
+	'bootstrapjs'
 ], function() {
 
 	// Provide a global location to place configuration settings and module

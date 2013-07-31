@@ -39,7 +39,6 @@ function(app) {
 			this.addAddButton();
 		},
 		addItem: function (model) {
-			console.log('isFirst:', this.collection.first() === model );
 			if (this.collection.first() === model) {
 				model.set('active', true);
 			}
@@ -81,6 +80,9 @@ function(app) {
 			// add sheet modal
 		}
 	});
+	
+	
+	
 
 	return UI;
 });
