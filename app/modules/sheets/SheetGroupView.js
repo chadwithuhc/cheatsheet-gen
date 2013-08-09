@@ -1,6 +1,8 @@
 var View = require('core/View');
 var template = require('./templates/GroupView');
 var SheetItemView = require('./SheetItemView');
+var SheetConfig = require('./SheetConfig');
+var BootstrapUtils = require('utils/BootstrapUtils');
 
 /**
  * Sheet Group View
@@ -9,31 +11,39 @@ var SheetItemView = require('./SheetItemView');
 var SheetGroupView = View.extend({
 
 	template: template,
-	className: 'groups',
+	className: 'group',
 
 	ui: {
 		$items: '.items'
 	},
-
-	events: {
-		//'dblclick $sheet': 'triggerEdit'
+	
+	colNumber: 0,
+	
+	initialize: function (options) {
+		if (options) {
+			this.setColNumber(options.column);
+		}
 	},
-
-	appEvents: _.object([
-		//[SheetEvents.ADD_SHEET, 'addSheet'],
-		//[SheetEvents.REMOVE_SHEET, 'removeSheet']
-	]),
-
-	initialize: function () {
-		//this.collection.on('add remove change', this.render, this);
+	
+	setColNumber: function (num) {
+		this.colNumber = num;
+	},
+	
+	getColNumber: function () {
+		return this.colNumber;
 	},
 
 	serialize: function () {
-		return { name: this.model.get('name') }
+		return this.model.toJSON();
 	},
 
 	afterRender: function () {
+		this.renderCols();
 		this.renderItems();
+	},
+	
+	renderCols: function () {
+		this.$el.addClass(BootstrapUtils.getColSpanClass(SheetConfig.COLS));
 	},
 
 	renderItems: function () {

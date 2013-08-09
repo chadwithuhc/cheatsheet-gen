@@ -6,6 +6,8 @@ var SheetsConfig = require('./SheetConfig');
  */
 
 var SheetEvents = new Events({
+	
+	app: Giraffe.app,
 
 	namespace: 'module:' + SheetsConfig.namespace,
 
@@ -27,7 +29,7 @@ var SheetEvents = new Events({
 	ADD_SHEET: true,
 	/**
 	 * Remove a sheet
-	 * @param {String} sheet_id
+	 * @param {SheetModel} model
 	 */
 	REMOVE_SHEET: true,
 	/**
@@ -46,6 +48,26 @@ var SheetEvents = new Events({
 	 * Hide the visibility of the Form Sheet
 	 */
 	HIDE_FORM_SHEET: true,
+
+
+	/**
+	 * Switch to a specific sheet in the UI
+	 * @param {String} sheet_id
+	 */
+	SWITCH_TO_SHEET: true,
+	/**
+	 * Hides all the sheets on the page
+	 */
+	HIDE_ALL_SHEETS: true,
+	/**
+	 * Show a specific sheet
+	 * @param {String} sheet_id
+	 */
+	SHOW_SHEET: true,
+	/**
+	 * Triggered when we delete all sheets
+	 */
+	NO_SHEETS_REMAIN: true,
 
 });
 

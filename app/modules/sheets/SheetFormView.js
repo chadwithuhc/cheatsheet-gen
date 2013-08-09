@@ -108,6 +108,11 @@ var SheetFormView = View.extend({
 		this.$el.show();
 	},
 	
+	cancelForm: function (e) {
+		e.preventDefault();
+		this.resetForm();
+	},
+	
 	beforeRender: function () {
 		this.hideForm();
 	},

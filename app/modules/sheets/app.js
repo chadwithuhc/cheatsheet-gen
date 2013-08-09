@@ -1,9 +1,10 @@
 var Module = require('core/Module');
 var SheetModel = require('./SheetModel');
 var SheetsCollection = require('./SheetsCollection');
+var SheetMenuView = require('./SheetMenuView');
 var SheetFormView = require('./SheetFormView');
 var SheetView = require('./SheetView');
-var SheetsContainer = require('./templates/Container');
+var SheetsContainer = require('./SheetsContainer');
 var SheetEvents = require('./SheetEvents');
 var SheetsConfig = require('./SheetConfig');
 var SheetFixture = require('./SheetFixture');
@@ -15,9 +16,6 @@ var Sheets = Module.extend({
 	
 	namespace: SheetsConfig.namespace,
 	
-	className: 'container',
-	template: SheetsContainer,
-	
 	defaultSheet: {
 		title: 'Example Sheet',
 		description: 'This is an example sheet for you.'
@@ -28,22 +26,8 @@ var Sheets = Module.extend({
 	},
 	
 	appEvents: _.object([
-		[SheetEvents.ADD_SHEET, 'addSheet'],
-		[SheetEvents.REMOVE_SHEET, 'removeSheet']
+		
 	]),
-	
-	ui: {
-		$addSheet: '.addSheetBtn'
-	},
-	
-	events: {
-		'click $addSheet': App.triggerEvent(SheetEvents.SHOW_ADD_SHEET_FORM)
-	},
-	
-	dataEvents: {
-		'add collection': 'attachSheet',
-		'remove collection': 'detachSheet'
-	},
 
 	initialize: function (options) {
 		// Attach to the App
@@ -62,34 +46,26 @@ var Sheets = Module.extend({
 		
 		// Append the views on initialize
 		this.addInitializer(this.addViews);
+		
+		// Append an additional sheet later on
+		this.addInitializer(function () {
+			var model = this.fixture.FullSheet();
+			this.app.trigger(SheetEvents.ADD_SHEET, model);
+		});
 
 		this.start();
 	},
 	
 	addViews: function () {
-		this.views.sheetFormView = new SheetFormView();
 		this.collection = new SheetsCollection(this.defaultSheet);
+		this.views.sheetsContainer = new SheetsContainer({ collection: this.collection });
+		this.views.sheetMenuView = new SheetMenuView({ collection: this.collection });
+		this.views.sheetFormView = new SheetFormView();
 
 		this.attach(this.views.sheetFormView);
-		this.collection.each(this.attachSheet, this);
+		this.attach(this.views.sheetMenuView);
+		this.attach(this.views.sheetsContainer);
 	},
-	
-	attachSheet: function (model) {
-		var view = new SheetView({ model: model });
-		this.attach(view);
-	},
-
-	detachSheet: function () {
-		
-	},
-	
-	addSheet: function (models) {
-		this.collection.add(models);
-	},
-	
-	removeSheet: function (models) {
-		this.collection.remove(models);
-	}
 	
 });
 

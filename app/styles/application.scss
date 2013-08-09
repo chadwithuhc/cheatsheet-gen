@@ -6,7 +6,35 @@
   box-sizing: border-box;
 }
 
-#home-view {
-  width: 1003px;
-  margin: 0 auto;
+header {
+	
+	position: relative;
+	
+	&:hover {
+
+		padding-left: 3em;
+
+		.icons {
+			visibility: visible;
+		}
+	}
+	
+}
+
+.icons {
+	
+	visibility: hidden;
+	position: absolute;
+	top: 0;
+	left: 0;
+	
+	&:hover {
+		visibility: visible;
+	}
+
+	* {
+		cursor: pointer;
+		display: block;
+	}
+	
 }

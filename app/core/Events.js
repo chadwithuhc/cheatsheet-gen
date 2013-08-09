@@ -10,11 +10,21 @@ var Events = Enum.extend({
 		options = options || {};
 		_.defaults(options, Events.prototype.defaults);
 		Enum.prototype.initialize.call(this, options);
+		this.app || (this.app = Giraffe.app);
 		this.setNamespace(options.namespace);
 	},
-	
-	event: function (name) {
-		return this[name];
+
+	/**
+	 * A Helper for setting event triggers as callbacks
+	 * @param {String} trigger_name  The name of the event
+	 * @param {Array} args  Args to pass to the trigger, gets `.apply()`d
+	 * @example
+	 *   {
+	 *     'click .new_item': Events.triggerCb(Events.ADD_ITEM)
+	 *   }
+	 */
+	triggerCb: function () {
+		return _.callback.call(this.app, this.app.trigger, arguments);
 	},
 	
 	setNamespace: function (ns) {

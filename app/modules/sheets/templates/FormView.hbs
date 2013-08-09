@@ -1,7 +1,8 @@
-<fieldgroup>
-	<h1>{{mode}} Sheet</h1>
+<fieldset>
+	<legend>{{mode}} Sheet</legend>
 	{{#if id}}<input type="hidden" name="id" value="{{id}}" />{{/if}}
-	<input type="text" name="title" value="{{title}}" /><br/>
-	<textarea name="description" id="" cols="30" rows="3">{{description}}</textarea><br/>
-	<button data-gf-click="submitForm">Save</button>
-</fieldgroup>
+	<input type="text" name="title" value="{{title}}" placeholder="Title" /><br/>
+	<textarea name="description" id="" cols="30" rows="3" placeholder="Description">{{description}}</textarea><br/>
+	<button class="btn btn-primary" data-gf-click="submitForm">Save</button>&nbsp;&nbsp;
+	<a href="#" data-gf-click="cancelForm">Cancel</a>
+</fieldset>

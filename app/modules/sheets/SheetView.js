@@ -2,6 +2,8 @@ var View = require('core/View');
 var template = require('./templates/SheetView');
 var SheetEvents = require('./SheetEvents');
 var SheetGroupView = require('./SheetGroupView');
+var SheetConfig = require('./SheetConfig');
+var BootstrapUtils = require('utils/BootstrapUtils');
 
 /**
  * Sheet View
@@ -17,7 +19,9 @@ var SheetView = View.extend({
 	},
 	
 	events: {
-		'dblclick': 'triggerEdit'
+		'dblclick header': 'triggerEdit',
+		'click .btn-edit': 'triggerEdit',
+		'click .btn-delete': 'triggerRemove'
 	},
 	
 	dataEvents: {
@@ -33,7 +37,15 @@ var SheetView = View.extend({
 	},
 
 	triggerRemove: function (e) {
-		this.app.trigger(SheetEvents.REMOVE_SHEET, [this.model]);
+		this.app.trigger(SheetEvents.REMOVE_SHEET, this.model);
+	},
+	
+	hide: function () {
+		this.$el.hide();
+	},
+	
+	show: function () {
+		this.$el.show();
 	},
 	
 	serialize: function () {

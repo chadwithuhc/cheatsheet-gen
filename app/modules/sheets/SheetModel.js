@@ -15,22 +15,10 @@ var SheetModel = Model.extend({
 	},
 	
 	initialize: function () {
-		//this.getGroups();
+		if (!this.get('id')) {
+			this.set('id', _.uniqueId('id'));
+		}
 	},
-	
-	getGroups: function () {
-		// return groups if defined
-		var groups = this.get('groups');
-		if (groups !== null) {
-			return groups;
-		}
-		
-		// Sheet ID required to get groups
-		var id = this.get('id');
-		if (id !== null) {
-			this.groups = new Collection();
-		}
-	}
 	
 });
 

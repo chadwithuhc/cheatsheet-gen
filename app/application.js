@@ -6,6 +6,8 @@ console.logEvents = function () {
  * Application Bootstrapper
  */
 var Application = new Giraffe.App({
+
+	id: 'CheatseetGenerator',
 	
 	appEvents: {
 		
@@ -27,14 +29,6 @@ var Application = new Giraffe.App({
 					}, this);
 				}
 			});
-			/**
-			 * A Helper for setting event triggers as callbacks
-			 * @param {String} trigger_name  The name of the event
-			 * @param {Array} args  Args to pass to the trigger, gets `.apply()`d
-			 */
-			this.triggerEvent = function () {
-				return _.callback.call(this, this.trigger, arguments);
-			}
 		},
 		
 		'app:initialized': function () {
