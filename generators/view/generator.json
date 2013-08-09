@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "from": "view.js.hbs",
+      "to": "app/views/{{name}}View.js"
+    }
+  ],
+  "dependencies": [
+    {"name": "view-test", "params": "{{name}}"},
+    {"name": "template", "params": "{{name}}View"}
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "files": [
+    {
+      "from": "style.scss.hbs",
+      "to": "app/styles/{{name}}.scss"
+    }
+  ],
+  "dependencies": []
+}

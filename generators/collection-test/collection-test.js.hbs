@@ -1,0 +1,18 @@
+var {{#camelize}}{{name}}{{/camelize}}Model = require('models/{{name}}');
+var {{#camelize}}{{pluralName}}{{/camelize}}Collection = require('models/{{pluralName}}');
+
+describe('{{#camelize}}{{name}}{{/camelize}}Collection', function(done){
+
+	var self = this;
+
+	beforeEach(function(){
+		self.model = new {{#camelize}}{{name}}{{/camelize}}Model();
+		self.collection = new {{#camelize}}{{pluralName}}{{/camelize}}Collection();
+	});
+
+	afterEach(function(){
+		self.model.dispose();
+		self.collection.dispose();
+	});
+
+});

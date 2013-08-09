@@ -1,0 +1,7 @@
+<fieldgroup>
+	<h1>{{mode}} Sheet</h1>
+	{{#if id}}<input type="hidden" name="id" value="{{id}}" />{{/if}}
+	<input type="text" name="title" value="{{title}}" /><br/>
+	<textarea name="description" id="" cols="30" rows="3">{{description}}</textarea><br/>
+	<button data-gf-click="submitForm">Save</button>
+</fieldgroup>

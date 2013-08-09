@@ -1,0 +1,11 @@
+var {{#camelize}}{{name}}{{/camelize}}Model = require('models/{{name}}');
+
+describe('{{#camelize}}{{name}}{{/camelize}}Model', function(){
+
+	var self = this;
+
+	beforeEach(function(done){
+		self.model = new {{#camelize}}{{name}}{{/camelize}}Model();
+	});
+
+});
