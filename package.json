@@ -26,9 +26,7 @@
     "handlebars-brunch": ">= 1.5.2",
 
     "uglify-js-brunch": ">= 1.5.1",
-    "clean-css-brunch": ">= 1.5.1",
-
-    "auto-reload-brunch": "~1.6.3"
+    "clean-css-brunch": ">= 1.5.1"
   },
   "devDependencies": {
     "mocha": ">= 1.8.2",

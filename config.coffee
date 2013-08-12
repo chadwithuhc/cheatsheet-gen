@@ -1,9 +1,6 @@
 exports.config =
 # See docs at http://brunch.readthedocs.org/en/latest/config.html.
 
-# Application build path.  Default is public
-#buildPath: ''
-
 	paths:
 		'public': 'public'
 
@@ -12,7 +9,7 @@ exports.config =
 			defaultExtension: 'js'
 			joinTo:
 				'javascripts/app.js': /^app/
-				'javascripts/vendor.js': /^vendor(\/|\\)(?!bootstrap|backbone-m|z|l|p)/
+				'javascripts/vendor.js': /^vendor(\/|\\)(?!bootstrap|zepto|lodash|parse)(.*)/
 				'test/javascripts/test.js': /^test(\/|\\)(?!vendor)/
 				'test/javascripts/test-vendor.js': /^test(\/|\\)(?=vendor)/
 			order:
@@ -28,25 +25,23 @@ exports.config =
 					# backbone
 					'vendor/scripts/backbone-1.0.0.js',
 					'vendor/scripts/backbone.giraffe.js',
+					'vendor/scripts/backbone.giraffe.contrib.js',
 					'vendor/scripts/backbone.giraffe.module.js',
 					'vendor/scripts/backbone.giraffe.mod.js',
-					'vendor/scripts/backbone-mediator.js',
-					'vendor/scripts/backbone.super.js',
-					'vendor/scripts/backbone-module.js',
 					# bootstrap
-					'vendor/scripts/bootstrap/bootstrap-tooltip.js',
-					'vendor/scripts/bootstrap/bootstrap-transition.js',
-					'vendor/scripts/bootstrap/bootstrap-affix.js',
-					'vendor/scripts/bootstrap/bootstrap-alert.js',
-					'vendor/scripts/bootstrap/bootstrap-button.js',
-					'vendor/scripts/bootstrap/bootstrap-carousel.js',
-					'vendor/scripts/bootstrap/bootstrap-collapse.js',
-					'vendor/scripts/bootstrap/bootstrap-dropdown.js',
-					'vendor/scripts/bootstrap/bootstrap-modal.js',
-					'vendor/scripts/bootstrap/bootstrap-popover.js',
-					'vendor/scripts/bootstrap/bootstrap-scrollspy.js',
-					'vendor/scripts/bootstrap/bootstrap-tab.js',
-					'vendor/scripts/bootstrap/bootstrap-typeahed.js'
+					#'vendor/scripts/bootstrap/bootstrap-tooltip.js',
+					#'vendor/scripts/bootstrap/bootstrap-transition.js',
+					#'vendor/scripts/bootstrap/bootstrap-affix.js',
+					#'vendor/scripts/bootstrap/bootstrap-alert.js',
+					#'vendor/scripts/bootstrap/bootstrap-button.js',
+					#'vendor/scripts/bootstrap/bootstrap-carousel.js',
+					#'vendor/scripts/bootstrap/bootstrap-collapse.js',
+					#'vendor/scripts/bootstrap/bootstrap-dropdown.js',
+					#'vendor/scripts/bootstrap/bootstrap-modal.js',
+					#'vendor/scripts/bootstrap/bootstrap-popover.js',
+					#'vendor/scripts/bootstrap/bootstrap-scrollspy.js',
+					#'vendor/scripts/bootstrap/bootstrap-tab.js',
+					#'vendor/scripts/bootstrap/bootstrap-typeahed.js'
 				]
 
 		stylesheets:
@@ -67,7 +62,3 @@ exports.config =
 				'javascripts/templates.js': /^app/
 
 	minify: no
-
-	plugins:
-		autoReload:
-			disabled: true
