@@ -38,3 +38,32 @@ header {
 	}
 	
 }
+
+
+
+.sheet {
+	
+	.sheet-title {}
+	.sheet-description {}
+
+	.sheet-data {
+
+		.group {}
+		.group-wrapper {}
+
+		.group-name {
+			margin: 0; padding: 0.5em; border-bottom: 1px solid #e3e3e3;
+		}
+		
+		.items {
+			
+			.item { display: inline-block; width: 40% }
+			.item-name { font-family: Courier, monospace }
+			.item-caption {}
+			
+		}
+
+	}
+	
+	
+}

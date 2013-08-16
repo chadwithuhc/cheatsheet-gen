@@ -8,11 +8,17 @@ var Config = new Enum({
 
 	namespace: 'sheets',
 
-	COLS: 4,
+	COLS: 2,
 
 	// Examples
 	MAX_SHEETS: 5,
-	MAX_ITEMS_PER_SHEET: 10
+	MAX_ITEMS_PER_SHEET: 10,
+	
+	classes: {
+		
+		groups: 'group'
+		
+	}
 
 
 });
