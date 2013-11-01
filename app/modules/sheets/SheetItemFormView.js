@@ -1,37 +1,21 @@
-var View = require('core/View');
 var FormView = require('./FormView');
-var SheetModel = require('./SheetModel');
+var SheetItemModel = require('./SheetItemModel');
 var SheetEvents = require('./SheetEvents');
 
 /**
- * Sheet Form View
+ * Sheet Item Form View
  * @extends FormView
  */
-var SheetFormView = FormView.extend({
-	
-	appEvents: _.object([
-		[SheetEvents.SHOW_SHEET_FORM, 'showForm'],
-		[SheetEvents.HIDE_SHEET_FORM, 'hideForm'],
-		[SheetEvents.SHOW_ADD_SHEET_FORM, 'showAddForm'],
-		[SheetEvents.SHOW_EDIT_SHEET_FORM, 'showEditForm'],
-		[SheetEvents.SAVE_SHEET, 'saveForm']
-	]),
-	
-	model: new SheetModel(),
+var SheetItemFormView = FormView.extend({
 
-	/**
-	 * Temporary crutch until form is updated
-	 */
-	afterInitialize: function () {
-		this.hideForm();
-	},
+	model: new SheetItemModel(),
 
 	/**
 	 * Override to set custom form title
 	 * @returns {String}  "[Add|Edit] Sheet"
 	 */
 	getFormTitle: function () {
-		return [this.mode, 'Sheet'].join(' ');
+		return [this.mode, 'Item'].join(' ');
 	},
 
 	/**
@@ -40,7 +24,7 @@ var SheetFormView = FormView.extend({
 	 */
 	submitForm: function (e) {
 		e.preventDefault();
-		this.app.trigger(SheetEvents.SAVE_SHEET, this.getFormValues(), this.options.mode);
+		this.saveForm(this.getFormValues(), this.mode);
 		this.resetForm();
 	},
 
@@ -56,10 +40,10 @@ var SheetFormView = FormView.extend({
 		}
 		// Save a new guy
 		else if (mode === this.modes.ADD) {
-			this.app.trigger(SheetEvents.ADD_SHEET, new SheetModel(model));
+			this.invoke('addItem', this.model); // Safe way of calling this.parent.addItem()
 		}
 	}
 
 });
 
-module.exports = SheetFormView;
+module.exports = SheetItemFormView;

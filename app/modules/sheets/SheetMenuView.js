@@ -53,7 +53,8 @@ var SheetMenuView = CollectionView.extend({
 	template: template,
 	className: 'container',
 	
-	itemView: SheetMenuItemView,
+	modelView: SheetMenuItemView,
+	modelViewEl: '.nav-tabs',
 
 	ui: {
 		$nav: '.nav-tabs',
@@ -83,7 +84,7 @@ var SheetMenuView = CollectionView.extend({
 		});
 	},
 	
-	_onAdd: function (model) {
+	_onAdd: function (model) {debugger;
 		var view = new this.ItemView({ model: model });
 		this.setActiveMenuItem();
 		view.attachTo(this.$nav, { method: 'prepend' });

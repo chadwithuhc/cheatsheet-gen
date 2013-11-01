@@ -13,12 +13,12 @@ var SheetModel = Model.extend({
 		description: null,
 		groups: null // Collection of SheetGroupModel
 	},
-	
-	initialize: function () {
-		if (!this.get('id')) {
-			this.set('id', _.uniqueId('id'));
-		}
-	},
+
+	schema: {
+		id: 'Hidden',
+		title: 'Text',
+		description: 'TextArea'
+	}
 	
 });
 

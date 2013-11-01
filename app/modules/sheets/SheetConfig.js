@@ -8,7 +8,7 @@ var Config = new Enum({
 
 	namespace: 'sheets',
 
-	COLS: 2,
+	COLS: 3,
 
 	// Examples
 	MAX_SHEETS: 5,

@@ -11,7 +11,7 @@ var SheetEvents = require('./SheetEvents');
  */
 var SheetsContainer = CollectionView.extend({
 	
-	itemView: SheetView,
+	modelView: SheetView,
 
 	template: template,
 	className: 'container',

@@ -11,6 +11,12 @@ var SheetGroupModel = Model.extend({
 		name: null,
 		order: null,
 		items: null
+	},
+	
+	schema: {
+		id: 'Hidden',
+		name: 'Text',
+		order: 'Hidden'
 	}
 
 });

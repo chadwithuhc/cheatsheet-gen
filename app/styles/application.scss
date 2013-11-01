@@ -27,6 +27,12 @@ header {
 	position: absolute;
 	top: 0;
 	left: 0;
+	cursor: default;
+	
+	> .btn {
+		display: block;
+		margin-bottom: 5px;
+	}
 	
 	&:hover {
 		visibility: visible;
@@ -57,9 +63,9 @@ header {
 		
 		.items {
 			
-			.item { display: inline-block; width: 40% }
+			.item { display: block; cursor: pointer }
 			.item-name { font-family: Courier, monospace }
-			.item-caption {}
+			.item-caption { display: none; cursor: default }
 			
 		}
 

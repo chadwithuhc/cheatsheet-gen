@@ -69,6 +69,24 @@ var SheetEvents = new Events({
 	 */
 	NO_SHEETS_REMAIN: true,
 
+
+	/**
+	 * Add an item from a group
+	 * @param {SheetItemModel} model
+	 */
+	ADD_ITEM: true,
+	/**
+	 * Remove an item from a group
+	 * @param {SheetItemModel} model
+	 */
+	REMOVE_ITEM: true,
+	/**
+	 * Save an item to a group collection, etc.
+	 * @param {SheetItemModel} model
+	 * @param {String} mode
+	 */
+	SAVE_ITEM: true
+
 });
 
 module.exports = SheetEvents;

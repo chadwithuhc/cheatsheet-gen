@@ -65,7 +65,7 @@ var Sheets = Module.extend({
 		this.attach(this.views.sheetFormView);
 		this.attach(this.views.sheetMenuView);
 		this.attach(this.views.sheetsContainer);
-	},
+	}
 	
 });
 

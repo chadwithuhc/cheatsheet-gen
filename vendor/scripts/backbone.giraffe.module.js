@@ -11,11 +11,18 @@
  * - Adds reference to `this.module` on attached views and subviews
  */
 ;(function (Giraffe) {
-	
-	var __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+
+	var $, $document, $window, Backbone, error, _, _afterInitialize, _setEventBindings, _setEventMapBindings,
+		__bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
 		__hasProp = {}.hasOwnProperty,
 		__extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
 		__slice = [].slice;
+
+	$ = window.$, _ = window._, Backbone = window.Backbone;
+
+	$window = $(window);
+
+	$document = $(document);
 	
 	Giraffe.modules = {};
 
@@ -24,6 +31,8 @@
 
 		function Module(options) {
 			//this._onUnload = __bind(this._onUnload, this);
+			//this.app = this;
+			// NEW: I think?
 			if (options != null ? options.routes : void 0) {
 				this.routes = options.routes;
 			}
@@ -38,33 +47,39 @@
 		}
 
 		Module.prototype._cache = function() {
-			if (this.routes) {
-				this.router = new Giraffe.Router({
-					app: this.app,
-					triggers: this.routes
-				});
-			}
 			//if (Giraffe.app == null) {
 			//	Giraffe.app = this;
 			//}
+			//Giraffe.apps[this.cid] = this;
+			// NEW: Modules support
 			Giraffe.modules[this.mid] = this;
-			//$(window).on("unload", this._onUnload);
+			if (this.routes) {
+				if (this.router == null) {
+					this.router = new Giraffe.Router({
+						app: this,
+						triggers: this.routes
+					});
+				}
+			}
+			//$window.on('unload', this._onUnload);
 			return Module.__super__._cache.apply(this, arguments);
 		};
 
 		Module.prototype._uncache = function() {
-			if (this.router) {
-				this.router = null;
-			}
 			//if (Giraffe.app === this) {
 			//	Giraffe.app = null;
 			//}
+			//delete Giraffe.apps[this.cid];
+			// NEW: Module support
 			delete Giraffe.modules[this.mid];
-			//$(window).off("unload", this._onUnload);
+			if (this.router) {
+				this.router = null;
+			}
+			//$window.off('unload', this._onUnload);
 			return Module.__super__._uncache.apply(this, arguments);
 		};
 
-		// Currently not needed since auto-disposed on app dispose
+		// NEW: // Currently not needed since auto-disposed on app dispose
 		//Module.prototype._onUnload = function() {
 		//	return this.dispose();
 		//};
@@ -86,12 +101,11 @@
 			});
 		};
 
-
-		/**
+		/*
 		 * Similar to the `events` hash of __Backbone.View__, `appEvents` maps events
-		 * on `this.app` to methods on a __Giraffe__ object. App events can be
+		 * on `this.app` to methods on a __Giraffe__ object. Module events can be
 		 * triggered from routes or by any object in your application. If a
-		 * __Giraffe.App__ has been created, every __Giraffe__ object has a reference
+		 * __Giraffe.Module__ has been created, every __Giraffe__ object has a reference
 		 * to the global __Giraffe.app__ instance at `this.app`, and a specific app
 		 * instance can be set by passing `options.app` to the object's constructor.
 		 * This instance of `this.app` is used to bind `appEvents`, and these bindings
@@ -101,27 +115,31 @@
 		 *     this.appEvents = {'some:appEvent': 'someMethod'};
 		 *     this.app.trigger('some:appEvent', params) // => this.someMethod(params)
 		 */
+
+
 		Module.prototype.appEvents = null;
 
-		/**
-		 * If `routes` is defined on a __Giraffe.App__ or passed to its constructor
+		/*
+		 * If `routes` is defined on a __Giraffe.Module__ or passed to its constructor
 		 * as an option, the app will create an instance of __Giraffe.Router__ as
 		 * `this.router` and set the router's `triggers` to the app's `routes`. Any
 		 * number of routers can be instantiated manually, but they do require that an
-		 * instance of __Giraffe.App__ is first created, because they use `appEvents`
+		 * instance of __Giraffe.Module__ is first created, because they use `appEvents`
 		 * for route handling. See [`Giraffe.Router#triggers`](#Router-triggers)
 		 * for more.
 		 *
-		 *     var app = new Giraffe.App({routes: {'route': 'appEvent'}});
+		 *     var app = new Giraffe.Module({routes: {'route': 'appEvent'}});
 		 *     app.router; // => instance of Giraffe.Router
 		 *     // or
-		 *     var MyApp = Giraffe.App.extend({routes: {'route': 'appEvent'}});
-		 *     var myApp = new MyApp();
-		 *     myApp.router; // => instance of Giraffe.Router
+		 *     var MyModule = Giraffe.Module.extend({routes: {'route': 'appEvent'}});
+		 *     var myModule = new MyModule();
+		 *     myModule.router; // => instance of Giraffe.Router
 		 */
+
+
 		Module.prototype.routes = null;
 
-		/**
+		/*
 		 * Queues up the provided function to be run on `start`. The functions you
 		 * provide are called with the same `options` object passed to `start`. If the
 		 * provided function has two arguments, the options and a callback, the app's
@@ -142,30 +160,38 @@
 		 *     {Object} options - options passed from `start`
 		 *     {Function} cb - optional async callback `function(err)`
 		 */
+
+
 		Module.prototype.addInitializer = function(fn) {
 			if (this.started) {
-				fn.call(this, this.options);
+				fn.call(this, this._startOptions);
+				_.extend(this, this._startOptions);
 			} else {
 				this._initializers.push(fn);
 			}
 			return this;
 		};
 
-		/**
-		 * Starts the module by executing each initializer in the order it was added,
+		/*
+		 * Starts the app by executing each initializer in the order it was added,
 		 * passing `options` through the initializer queue. Triggers the `appEvents`
-		 * `'module:initializing module:[namespace]:initializing'`
-		 * and `'module:initialized module:[namespace]:initialized'`.
+		 * `'app:initializing'` and `'app:initialized'`.
 		 *
-		 * @param {Object} [options] Passed to each initializer method
+		 * @param {Object} [options]
 		 */
+
+
 		Module.prototype.start = function(options) {
 			var next,
 				_this = this,
+			// NEW: Module support
 				triggerData = _.pick(this, 'mid', 'cid', 'namespace');
 			if (options == null) {
 				options = {};
 			}
+			this._startOptions = options;
+			//this.trigger('app:initializing', options);
+			// NEW: Module support
 			this.app.trigger('module:initializing module:' + this.namespace + ':initializing', triggerData);
 			next = function(err) {
 				var fn;
@@ -181,8 +207,10 @@
 						return next();
 					}
 				} else {
-					_.extend(_this.options, options);
+					_.extend(_this, options);
 					_this.started = true;
+					//return _this.trigger('app:initialized', options);
+					// NEW: Module support
 					return _this.app.trigger('module:initialized module:' + _this.namespace + ':initialized', triggerData);
 				}
 			};
@@ -244,3 +272,5 @@
 	
 	
 }).call(this, Backbone.Giraffe);
+
+

@@ -11,6 +11,13 @@ var SheetItemModel = Model.extend({
 		name: null,
 		caption: null,
 		order: null
+	},
+	
+	schema: {
+		id: 'Hidden',
+		name: 'Text',
+		caption: 'TextArea',
+		order: 'Hidden'
 	}
 
 });

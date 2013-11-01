@@ -116,7 +116,7 @@ var SheetFixture = function () {
 			});
 		});
 		
-		sheet.set('groups', new Collection(groups));
+		sheet.set('groups', new Collection(groups, { model: SheetGroupModel }));
 		
 		return sheet;
 	};
@@ -152,7 +152,7 @@ var SheetFixture = function () {
 			});
 		});
 		
-		group.set('items', new Collection(items));
+		group.set('items', new Collection(items, { model: SheetItemModel }));
 		
 		return group;
 	};

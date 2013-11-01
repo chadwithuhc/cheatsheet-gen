@@ -1,15 +1,22 @@
 (function() {
-	var Giraffe, error, _setEventBindings, _setEventMapBindings,
+	var $, $document, $window, Backbone, Giraffe, error, _, _afterInitialize, _setEventBindings, _setEventMapBindings,
 		__bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
 		__hasProp = {}.hasOwnProperty,
 		__extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
 		__slice = [].slice;
 
+	$ = window.$, _ = window._, Backbone = window.Backbone;
+
 	Backbone.Giraffe = window.Giraffe = Giraffe = {
+		version: '0.1.4',
 		app: null,
 		apps: {},
 		views: {}
 	};
+
+	$window = $(window);
+
+	$document = $(document);
 
 	error = function() {
 		var _ref, _ref1;
@@ -46,7 +53,7 @@
 	 * When a view renders, it first calls `detach` on all of its `children`, and
 	 * when a view is detached, the default behavior is to call `dispose` on it.
 	 * To overried this behavior and cache a view even when its `parent` renders, you
-	 * can set the cached view's `options.disposeOnDetach` to `false`.
+	 * can set the cached view's `disposeOnDetach` property to `false`.
 	 *
 	 *     var parentView = new Giraffe.View();
 	 *     parentView.attach(new Giraffe.View());
@@ -66,6 +73,9 @@
 	 * Currently, __Giraffe__ has only one class that extends __Giraffe.View__,
 	 * __Giraffe.App__, which encapsulates app-wide messaging and routing.
 	 *
+	 * Like all __Giraffe__ objects, __Giraffe.View__ extends each instance with
+	 * every property in `options`.
+	 *
 	 * @param {Object} [options]
 	 */
 
@@ -74,21 +84,12 @@
 		__extends(View, _super);
 
 		View.defaultOptions = {
-			disposeOnDetach: true,
-			alwaysRender: false,
-			saveScrollPosition: false,
-			documentTitle: null,
-			templateStrategy: null
+			disposeOnDetach: true
 		};
 
 		function View(options) {
-			if (options == null) {
-				options = {};
-			}
 			this.render = __bind(this.render, this);
-			_.defaults(options, Giraffe.View.defaultOptions);
-			this.app || (this.app = options.app || Giraffe.app);
-			Giraffe.bindEventMap(this, this.app, this.appEvents);
+			Giraffe.configure(this, options);
 			/*
 			 * When one view is attached to another, the child view is added to the
 			 * parent's `children` array. When `dispose` is called on a view, it disposes
@@ -107,25 +108,17 @@
 			this._renderedOnce = false;
 			this._isAttached = false;
 			this._createEventsFromUIElements();
-			this._wrapInitialize();
-			if (options.templateStrategy) {
-				Giraffe.View.setTemplateStrategy(options.templateStrategy, this);
-			} else if (typeof this.templateStrategy === 'string') {
+			if (typeof this.templateStrategy === 'string') {
 				Giraffe.View.setTemplateStrategy(this.templateStrategy, this);
 			}
-			View.__super__.constructor.call(this, options);
+			View.__super__.constructor.apply(this, arguments);
 		}
 
-		View.prototype._wrapInitialize = function() {
-			var _this = this;
-			return this.initialize = _.wrap(this.initialize, function(initialize) {
-				_this._cache();
-				_this.$el.attr('data-view-cid', _this.cid);
-				_this.setParent(Giraffe.View.getClosestView(_this.$el));
-				_this._cacheUiElements();
-				initialize.apply(_this, Array.prototype.slice.call(arguments, 1));
-				return _this._bindDataEvents();
-			});
+		View.prototype.beforeInitialize = function() {
+			this._cache();
+			this.$el.attr('data-view-cid', this.cid);
+			this.setParent(Giraffe.View.getClosestView(this.$el));
+			return this._cacheUiElements();
 		};
 
 		View.prototype._attachMethods = ['append', 'prepend', 'html', 'after', 'before', 'insertAfter', 'insertBefore'];
@@ -142,7 +135,7 @@
 		 * `options.forceRender` and `options.suppressRender`. See the
 		 * [_View Basics_ example](viewBasics.html) for more.
 		 *
-		 * @param {String/Element/jQuery/View} el A view, selector, or DOM element to attach `view.$el` to.
+		 * @param {String/Element/$/Giraffe.View} el A view, selector, or DOM element to attach `view.$el` to.
 		 * @param {Object} [options]
 		 *     {String} method The jQuery method used to put this view in `el`. Accepts `'append'`, `'prepend'`, `'html'`, `'after'`, and `'before'`. Defaults to `'append'`.
 		 *     {Boolean} forceRender Calls `render` when attached, even if the view has already been rendered.
@@ -164,8 +157,8 @@
 				method = 'append';
 			}
 			$el = Giraffe.View.to$El(el);
-			if (!$el) {
-				error('No such `el` to attach to', el);
+			if ($el.length !== 1) {
+				error('Expected to render to a single element but found ' + $el.length, el);
 				return this;
 			}
 			$container = _.contains(this._siblingAttachMethods, method) ? $el.parent() : $el;
@@ -175,10 +168,6 @@
 			if (method === 'insertBefore') {
 				method = 'before';
 			}
-			if ($el.length !== 1) {
-				error('Expected to render to a single element but found ' + $el.length, el);
-				return this;
-			}
 			this.detach(true);
 			this.setParent(Giraffe.View.getClosestView($container));
 			if (method === 'html') {
@@ -187,15 +176,15 @@
 			}
 			$el[method](this.$el);
 			this._isAttached = true;
-			shouldRender = !suppressRender && (!this._renderedOnce || forceRender || this.options.alwaysRender);
+			shouldRender = !suppressRender && (!this._renderedOnce || forceRender || this.alwaysRender);
 			if (shouldRender) {
 				this.render(options);
 			}
-			if (this.options.saveScrollPosition) {
+			if (this.saveScrollPosition) {
 				this._loadScrollPosition();
 			}
-			if (this.options.documentTitle != null) {
-				document.title = this.options.documentTitle;
+			if (this.documentTitle != null) {
+				document.title = this.documentTitle;
 			}
 			return this;
 		};
@@ -214,20 +203,20 @@
 
 
 		View.prototype.attach = function(view, options) {
-			var childEl, el;
+			var childEl, target;
+			target = null;
 			if (options != null ? options.el : void 0) {
-				el = Giraffe.View.to$El(options.el);
-				childEl = this.$el.find(el);
+				childEl = Giraffe.View.to$El(options.el, this.$el, true);
 				if (childEl.length) {
-					view.attachTo(childEl, options);
-				} else if (this.$el.is(el)) {
-					view.attachTo(this.$el, options);
+					target = childEl;
 				} else {
 					error('Attempting to attach to an element that doesn\'t exist inside this view!', options, view, this);
+					return this;
 				}
 			} else {
-				view.attachTo(this.$el, options);
+				target = this.$el;
 			}
+			view.attachTo(target, options);
 			return this;
 		};
 
@@ -244,10 +233,12 @@
 
 
 		View.prototype.render = function(options) {
+			var html;
 			this.beforeRender.apply(this, arguments);
 			this._renderedOnce = true;
 			this.detachChildren(options != null ? options.preserve : void 0);
-			this.$el.empty().html(this.templateStrategy() || '');
+			html = this.templateStrategy.apply(this, arguments) || '';
+			this.$el.empty()[0].innerHTML = html;
 			this._cacheUiElements();
 			this.afterRender.apply(this, arguments);
 			return this;
@@ -269,7 +260,7 @@
 		/*
 		 * This is an empty function for you to implement. After a view renders,
 		 * `afterRender` is called. Child views are normally attached to the DOM here.
-		 * Views that are cached by setting `options.disposeOnDetach` to true will be
+		 * Views that are cached by setting `disposeOnDetach` to true will be
 		 * in `view.children` in `afterRender`, but will not be attached to the
 		 * parent's `$el`.
 		 *
@@ -325,7 +316,7 @@
 		};
 
 		/*
-		 * Detaches the view from the DOM. If `view.options.disposeOnDetach` is true,
+		 * Detaches the view from the DOM. If `view.disposeOnDetach` is true,
 		 * which is the default, `dispose` will be called on the view and its
 		 * `children` unless `preserve` is true. `preserve` defaults to false. When
 		 * a view renders, it first calls `detach(false)` on the views inside its `$el`.
@@ -342,11 +333,11 @@
 				return this;
 			}
 			this._isAttached = false;
-			if (this.options.saveScrollPosition) {
+			if (this.saveScrollPosition) {
 				this._saveScrollPosition();
 			}
 			this.$el.detach();
-			if (this.options.disposeOnDetach && !preserve) {
+			if (this.disposeOnDetach && !preserve) {
 				this.dispose();
 			}
 			return this;
@@ -375,23 +366,33 @@
 		};
 
 		View.prototype._saveScrollPosition = function() {
-			return this._scrollPosition = this._getScrollPositionEl().scrollTop();
+			this._scrollPosition = this._getScrollPositionEl().scrollTop();
+			return this;
 		};
 
 		View.prototype._loadScrollPosition = function() {
 			if (this._scrollPosition != null) {
-				return this._getScrollPositionEl().scrollTop(this._scrollPosition);
+				this._getScrollPositionEl().scrollTop(this._scrollPosition);
 			}
+			return this;
 		};
 
 		View.prototype._getScrollPositionEl = function() {
-			switch (typeof this.options.saveScrollPosition) {
-				case 'string':
-					return this.$(this.options.saveScrollPosition).first();
-				case 'object':
-					return $(this.options.saveScrollPosition);
-				default:
-					return this.$el;
+			var $el;
+			if (typeof this.saveScrollPosition === 'boolean' || this.$el.is(this.saveScrollPosition)) {
+				return this.$el;
+			} else {
+				$el = Giraffe.View.to$El(this.saveScrollPosition, this.$el).first();
+				if ($el.length) {
+					return $el;
+				} else {
+					$el = Giraffe.View.to$El(this.saveScrollPosition).first();
+					if ($el.length) {
+						return $el;
+					} else {
+						return this.$el;
+					}
+				}
 			}
 		};
 
@@ -506,7 +507,7 @@
 
 		/*
 		 * If `el` is `null` or `undefined`, tests if the view is somewhere on the DOM
-		 * by calling `$(document).find(view.$el)`. If `el` is defined, tests if `el`
+		 * by calling `$document.find(view.$el)`. If `el` is defined, tests if `el`
 		 * is the immediate parent of `view.$el`.
 		 *
 		 * @param {String} [el] Optional selector, DOM element, or view to test against the view's immediate parent.
@@ -522,18 +523,31 @@
 					return this.$el.parent().is(el);
 				}
 			} else {
-				return $(document).find(this.$el).length > 0;
+				return $document.find(this.$el).length > 0;
 			}
 		};
 
 		/*
-		 * The `ui` object maps names to selectors, e.g.
-		 * `{$someName: '#some-selector'}`. If a view defines `ui`, the __jQuery__
-		 * objects it names will be cached and updated every `render`. For example,
-		 * declaring `this.ui = {$button: '#button'}` in a view makes `this.$button`
-		 * always available once `render` has been called. Typically the selector
-		 * value is a string, but if it's function, its return value will be assigned,
-		 * and if it's neither a string or a function, the value itself is assigned.
+		 * `ui` is an optional view property that helps DRY up DOM references in views.
+		 * It provides a convenient way to cache __jQuery__ objects after every `render`,
+		 * and the names given to these objects can be used in `Backbone.View#events`.
+		 * Declaring `this.ui = {$button: '#button'}` in a view makes `this.$button`
+		 * always available once `render` has been called. Typically the `ui` value is
+		 * a string which is then searched for inside `this.$el`, but if it's a
+		 * function, its return value will be assigned. If it's neither a string nor a
+		 * function, the value itself is assigned.
+		 *
+		 *     Giraffe.View.extend({
+		 *       ui: {
+		 *         $someButton: '#some-button-selector'
+		 *       },
+		 *       afterRender: {
+		 *         this.$someButton; // just got cached
+		 *       },
+		 *       events: {
+		 *         '#click $someButton': 'onClickSomeButton' // ui names work here
+		 *       }
+		 *     });
 		 */
 
 
@@ -550,7 +564,7 @@
 							case 'string':
 								return this.$(selector);
 							case 'function':
-								return selector();
+								return selector.call(this);
 							default:
 								return selector;
 						}
@@ -561,14 +575,11 @@
 		};
 
 		View.prototype._uncacheUiElements = function() {
-			var name, selector, _ref;
-			if (!this.ui) {
-				return this;
-			}
-			_ref = this.ui;
-			for (name in _ref) {
-				selector = _ref[name];
-				delete this[name];
+			var name;
+			if (this.ui) {
+				for (name in this.ui) {
+					delete this[name];
+				}
 			}
 			return this;
 		};
@@ -579,10 +590,10 @@
 				return this;
 			}
 			if (typeof this.ui === 'function') {
-				this.ui = this.ui();
+				this.ui = this.ui.call(this);
 			}
 			if (typeof this.events === 'function') {
-				this.events = this.events();
+				this.events = this.events.call(this);
 			}
 			_ref = this.events;
 			for (eventKey in _ref) {
@@ -613,33 +624,36 @@
 			}
 		};
 
-		View.prototype._bindDataEvents = function() {
-			var cb, eventKey, eventName, pieces, targetObj, _ref;
-			if (!this.dataEvents) {
-				return this;
-			}
-			if (typeof this.dataEvents === 'function') {
-				this.dataEvents = this.dataEvents();
-			}
-			_ref = this.dataEvents;
-			for (eventKey in _ref) {
-				cb = _ref[eventKey];
-				pieces = eventKey.split(' ');
-				if (pieces.length < 2) {
-					error('Data event must specify target object, ex: {\'change collection\': \'handler\'}');
-					continue;
-				}
-				targetObj = pieces.pop();
-				targetObj = targetObj === 'this' || targetObj === '@' ? this : this[targetObj];
-				if (!targetObj) {
-					error("Unknown taget object " + targetObj + " for data event", eventKey);
-					continue;
-				}
-				eventName = pieces.join(' ');
-				Giraffe.bindEvent(this, targetObj, eventName, cb);
-			}
-			return this;
-		};
+		/*
+		 * Inspired by `Backbone.View#events`, `dataEvents` binds a space-separated
+		 * list of events ending with the target object to methods on a view.
+		 * It is a shorthand way of calling `view.listenTo(targetObj, event, cb)`.
+		 * In this example `collection` is used, but any object on the view that
+		 * implements __Backbone.Events__ is a valid target object. To have a view
+		 * listen to itself, the keywords `'this'` and `'@'` can be used.
+		 *
+		 *     Giraffe.View.extend({
+		 *       dataEvents: {
+		 *         'add remove change collection': 'render',
+		 *         'event anotherEvent targetObj': function() {},
+		 *         'eventOnThisView @': 'methodName'
+		 *       }
+		 *     });
+		 *
+		 * As a result of using `listenTo`, `dataEvents` accepts multiple events per
+		 * definition, handlers are called in the context of the view, and
+		 * bindings are cleaned up in `dispose` via `stopListening`.
+		 *
+		 * There are some unfortunate restrictions to `dataEvents`. Objects created
+		 * after `initialize` will not be bound to, and events fired during the
+		 * `constructor` and `initialize` will not be heard. We advocate using
+		 * `Backbone.Events#listenTo` directly in these circumstances.
+		 *
+		 * See the [__Data Events__ example](dataEvents.html) for more.
+		 */
+
+
+		View.prototype.dataEvents = null;
 
 		View.prototype._uncache = function() {
 			delete Giraffe.views[this.cid];
@@ -673,7 +687,7 @@
 				return view[methodName].apply(view, args);
 			} else {
 				error('No such method name in view hierarchy', methodName, args, this);
-				return true;
+				return false;
 			}
 		};
 
@@ -690,19 +704,19 @@
 		 */
 
 
-		View.prototype.dispose = function() {
-			return Giraffe.dispose(this, function() {
-				this.setParent(null);
-				this.removeChildren();
-				this._uncacheUiElements();
-				this._uncache();
-				if (this.$el) {
-					this.remove();
-					return this.$el = null;
-				} else {
-					return error("Disposed of a view that has already been disposed", this);
-				}
-			});
+		View.prototype.beforeDispose = function() {
+			this.setParent(null);
+			this.removeChildren();
+			this._uncacheUiElements();
+			this._uncache();
+			this._isAttached = false;
+			if (this.$el) {
+				this.remove();
+				this.$el = null;
+			} else {
+				error('Disposed of a view that has already been disposed', this);
+			}
+			return this;
 		};
 
 		/*
@@ -712,7 +726,7 @@
 		 * in `attachTo`. Uses the `data-view-cid` attribute to match DOM nodes to view
 		 * instances.
 		 *
-		 * @param {String/Element/Giraffe.View} el
+		 * @param {String/Element/$/Giraffe.View} el
 		 * @param {Boolean} [preserve]
 		 */
 
@@ -736,7 +750,7 @@
 		 * __Giraffe.View__. Uses the `data-view-cid` attribute to match DOM nodes to
 		 * view instances.
 		 *
-		 * @param {String/Element/Giraffe.View} el
+		 * @param {String/Element/$/Giraffe.View} el
 		 */
 
 
@@ -758,8 +772,40 @@
 			return Giraffe.views[cid];
 		};
 
-		View.to$El = function(el) {
-			return (el != null ? el.$el : void 0) || (el instanceof $ ? el : $(el));
+		/*
+		 * Gets a __jQuery__ object from `el`, which can be a selector, element,
+		 * __jQuery__ object, or __Giraffe.View__, scoped by an optional `parent`,
+		 * which has the same available types as `el`. If the third parameter is
+		 * truthy, `el` can be the same element as `parent`.
+		 *
+		 * @param {String/Element/$/Giraffe.View} el
+		 * @param {String/Element/$/Giraffe.View} [parent] Opitional. Scopes `el` if provided.
+		 * @param {Boolean} [allowParentMatch] Optional. If truthy, `el` can be `parent`.
+		 */
+
+
+		View.to$El = function(el, parent, allowParentMatch) {
+			var $parent;
+			if (allowParentMatch == null) {
+				allowParentMatch = false;
+			}
+			if (parent) {
+				$parent = Giraffe.View.to$El(parent);
+				if (el != null ? el.$el : void 0) {
+					el = el.$el;
+				}
+				if (allowParentMatch && $parent.is(el)) {
+					return $parent;
+				} else {
+					return $parent.find(el);
+				}
+			} else if (el != null ? el.$el : void 0) {
+				return el.$el;
+			} else if (el instanceof $) {
+				return el;
+			} else {
+				return $(el);
+			}
 		};
 
 		/*
@@ -785,8 +831,12 @@
 		 */
 
 
-		View.setDocumentEvents = function(events) {
-			var event, _i, _len, _results;
+		View.setDocumentEvents = function(events, prefix) {
+			var attr, event, selector, _fn, _i, _len;
+			if (prefix == null) {
+				prefix = Giraffe.View._documentEventPrefix;
+			}
+			prefix = prefix || '';
 			if (typeof events === 'string') {
 				events = events.split(' ');
 			}
@@ -796,20 +846,23 @@
 			events = _.compact(events);
 			Giraffe.View.removeDocumentEvents();
 			Giraffe.View._currentDocumentEvents = events;
-			_results = [];
+			Giraffe.View._documentEventPrefix = prefix;
+			_fn = function(event, attr, selector) {
+				return $document.on(event, selector, function(e) {
+					var $target, method, view;
+					$target = $(e.target).closest(selector);
+					method = $target.attr(attr);
+					view = Giraffe.View.getClosestView($target);
+					return view.invoke(method, e);
+				});
+			};
 			for (_i = 0, _len = events.length; _i < _len; _i++) {
 				event = events[_i];
-				_results.push((function(event) {
-					return $(document).on(event, "[data-gf-" + event + "]", function(e) {
-						var $target, method, view;
-						$target = $(e.target).closest("[data-gf-" + event + "]");
-						method = $target.attr("data-gf-" + event);
-						view = Giraffe.View.getClosestView($target);
-						return view.invoke(method, e);
-					});
-				})(event));
+				attr = prefix + event;
+				selector = '[' + attr + ']';
+				_fn(event, attr, selector);
 			}
-			return _results;
+			return events;
 		};
 
 		/*
@@ -817,17 +870,38 @@
 		 */
 
 
-		View.removeDocumentEvents = function() {
-			var event, _i, _len, _ref, _ref1;
-			if (!((_ref = Giraffe.View._currentDocumentEvents) != null ? _ref.length : void 0)) {
+		View.removeDocumentEvents = function(prefix) {
+			var currentEvents, event, selector, _i, _len;
+			if (prefix == null) {
+				prefix = Giraffe.View._documentEventPrefix;
+			}
+			prefix = prefix || '';
+			currentEvents = Giraffe.View._currentDocumentEvents;
+			if (!(currentEvents != null ? currentEvents.length : void 0)) {
 				return;
 			}
-			_ref1 = Giraffe.View._currentDocumentEvents;
-			for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-				event = _ref1[_i];
-				$(document).off(event, "[data-gf-" + event + "]");
+			for (_i = 0, _len = currentEvents.length; _i < _len; _i++) {
+				event = currentEvents[_i];
+				selector = '[' + prefix + event + ']';
+				$document.off(event, selector);
 			}
 			return Giraffe.View._currentDocumentEvents = null;
+		};
+
+		/*
+		 * Sets the prefix for document events. Defaults to `data-gf-`,
+		 * so to bind to `'click'` events, one would put the `data-gf-click`
+		 * attribute on DOM elements with the name of a view method as the value.
+		 *
+		 * @param {String} prefix If `null` or `undefined`, defaults to the empty string.
+		 */
+
+
+		View.setDocumentEventPrefix = function(prefix) {
+			if (prefix == null) {
+				prefix = '';
+			}
+			return Giraffe.View.setDocumentEvents(Giraffe.View._currentDocumentEvents, prefix);
 		};
 
 		/*
@@ -953,7 +1027,7 @@
 
 	Giraffe.View.setTemplateStrategy('underscore-template-selector');
 
-	Giraffe.View.setDocumentEvents(['click', 'change']);
+	Giraffe.View.setDocumentEvents(['click', 'change'], 'data-gf-');
 
 	/*
 	 * __Giraffe.App__ is a special __Giraffe.View__ that provides encapsulation for
@@ -981,6 +1055,9 @@
 	 *
 	 * The app also provides synchronous and asynchronous initializers with `addInitializer` and `start`.
 	 *
+	 * Like all __Giraffe__ objects, __Giraffe.App__ extends each instance with
+	 * every property in `options`.
+	 *
 	 * @param {Object} [options]
 	 */
 
@@ -991,38 +1068,37 @@
 		function App(options) {
 			this._onUnload = __bind(this._onUnload, this);
 			this.app = this;
-			if (options != null ? options.routes : void 0) {
-				this.routes = options.routes;
-			}
 			this._initializers = [];
 			this.started = false;
 			App.__super__.constructor.apply(this, arguments);
 		}
 
 		App.prototype._cache = function() {
-			if (this.routes) {
-				this.router = new Giraffe.Router({
-					app: this,
-					triggers: this.routes
-				});
-			}
 			if (Giraffe.app == null) {
 				Giraffe.app = this;
 			}
 			Giraffe.apps[this.cid] = this;
-			$(window).on("unload", this._onUnload);
+			if (this.routes) {
+				if (this.router == null) {
+					this.router = new Giraffe.Router({
+						app: this,
+						triggers: this.routes
+					});
+				}
+			}
+			$window.on('unload', this._onUnload);
 			return App.__super__._cache.apply(this, arguments);
 		};
 
 		App.prototype._uncache = function() {
-			if (this.router) {
-				this.router = null;
-			}
 			if (Giraffe.app === this) {
 				Giraffe.app = null;
 			}
 			delete Giraffe.apps[this.cid];
-			$(window).off("unload", this._onUnload);
+			if (this.router) {
+				this.router = null;
+			}
+			$window.off('unload', this._onUnload);
 			return App.__super__._uncache.apply(this, arguments);
 		};
 
@@ -1093,7 +1169,8 @@
 
 		App.prototype.addInitializer = function(fn) {
 			if (this.started) {
-				fn.call(this, this.options);
+				fn.call(this, this._startOptions);
+				_.extend(this, this._startOptions);
 			} else {
 				this._initializers.push(fn);
 			}
@@ -1115,6 +1192,7 @@
 			if (options == null) {
 				options = {};
 			}
+			this._startOptions = options;
 			this.trigger('app:initializing', options);
 			next = function(err) {
 				var fn;
@@ -1130,22 +1208,13 @@
 						return next();
 					}
 				} else {
-					_.extend(_this.options, options);
+					_.extend(_this, options);
 					_this.started = true;
 					return _this.trigger('app:initialized', options);
 				}
 			};
 			next();
 			return this;
-		};
-
-		/*
-		 * See [`Giraffe.View#dispose`](#View-dispose).
-		 */
-
-
-		App.prototype.dispose = function() {
-			return App.__super__.dispose.apply(this, arguments);
 		};
 
 		return App;
@@ -1164,14 +1233,16 @@
 	 * you can build routes from app events and optional parameters with
 	 * `Giraffe.Router#getRoute`.
 	 *
+	 *     var myApp = new Giraffe.App;
 	 *     var myRouter = Giraffe.Router.extend({
 	 *       triggers: {
-	 *         'post/:id': 'show:post' // triggers 'show:posts' on this.app
+	 *         'post/:id': 'route:post'
 	 *       }
 	 *     });
-	 *     myRouter.cause('show:post', 42); // goes to #post/42 and triggers 'show:post'
-	 *     myRouter.isCaused('show:post', 42); // => true
-	 *     myRouter.getRoute('show:post', 42); // => '#post/42'
+	 *     myRouter.app === myApp; // => true
+	 *     myRouter.cause('route:post', 42); // goes to `#post/42` and triggers 'route:post' on `myApp`
+	 *     myRouter.isCaused('route:post', 42); // => true
+	 *     myRouter.getRoute('route:post', 42); // => '#post/42'
 	 *
 	 * The __Giraffe.Router__ requires that a __Giraffe.App__ has been created on the
 	 * page so it can trigger events for your objects to listen to. For convenience,
@@ -1183,6 +1254,9 @@
 	 *     });
 	 *     myApp.router.triggers; // => {'my/route': 'app:event'}
 	 *
+	 * Like all __Giraffe__ objects, __Giraffe.Router__ extends each instance with
+	 * every property in `options`.
+	 *
 	 * @param {Object} [options]
 	 */
 
@@ -1191,38 +1265,23 @@
 		__extends(Router, _super);
 
 		function Router(options) {
-			if (options == null) {
-				options = {};
-			}
-			this.app = options.app || Giraffe.app;
+			Giraffe.configure(this, options);
 			if (!this.app) {
 				return error('Giraffe routers require an app! Please create an instance of Giraffe.App before creating a router.');
 			}
 			this.app.addChild(this);
-			Giraffe.bindEventMap(this, this.app, this.appEvents);
-			if (options.triggers) {
-				this.triggers = options.triggers;
-			}
 			if (typeof this.triggers === 'function') {
-				this.triggers = this.triggers();
+				this.triggers = this.triggers.call(this);
 			}
 			if (!this.triggers) {
 				return error('Giraffe routers require a `triggers` map of routes to app events.');
-			}
-			if (options.parentRouter) {
-				this.parentRouter = options.parentRouter;
-			}
-			if (options.namespace) {
-				this.namespace = options.namespace;
-			} else if (!this.namespace) {
-				this.namespace = Giraffe.Router.defaultNamespace;
 			}
 			this._routes = {};
 			this._bindTriggers();
 			Router.__super__.constructor.apply(this, arguments);
 		}
 
-		Router.defaultNamespace = '';
+		Router.prototype.namespace = '';
 
 		Router.prototype._fullNamespace = function() {
 			if (this.parentRouter) {
@@ -1443,10 +1502,8 @@
 		 */
 
 
-		Router.prototype.dispose = function() {
-			return Giraffe.dispose(this, function() {
-				return this._unbindTriggers();
-			});
+		Router.prototype.beforeDispose = function() {
+			return this._unbindTriggers();
 		};
 
 		return Router;
@@ -1454,7 +1511,15 @@
 	})(Backbone.Router);
 
 	/*
-	 * __Giraffe.Model__ and __Giraffe.Collection__ are thin wrappers that add lifecycle management and `appEvents` support. To add lifecycle management to an arbitrary object, simply give it a `dispose` method and add it to a view via `addChild`. To use this functionality in your own objects, see [`Giraffe.dispose`](#dispose) and [`Giraffe.bindEventMap`](#bindEventMap).
+	 * __Giraffe.Model__ and __Giraffe.Collection__ are thin wrappers that add
+	 * lifecycle management and `appEvents` support. To add lifecycle management to
+	 * an arbitrary object, simply give it a `dispose` method and add it to a view
+	 * via `addChild`. To use this functionality in your own objects, see
+	 * [`Giraffe.dispose`](#dispose) and [`Giraffe.bindEventMap`](#bindEventMap).
+	 *
+	 * Like all __Giraffe__ objects, __Giraffe.Model__ and __Giraffe.Collection__
+	 * extend each instance with every property in `options` except `parse` which
+	 * is problematic per issue 7.
 	 *
 	 * @param {Object} [attributes]
 	 * @param {Object} [options]
@@ -1464,9 +1529,12 @@
 	Giraffe.Model = (function(_super) {
 		__extends(Model, _super);
 
+		Model.defaultOptions = {
+			omittedOptions: 'parse'
+		};
+
 		function Model(attributes, options) {
-			this.app || (this.app = (options != null ? options.app : void 0) || Giraffe.app);
-			Giraffe.bindEventMap(this, this.app, this.appEvents);
+			Giraffe.configure(this, options);
 			Model.__super__.constructor.apply(this, arguments);
 		}
 
@@ -1482,11 +1550,9 @@
 		 */
 
 
-		Model.prototype.dispose = function() {
-			return Giraffe.dispose(this, function() {
-				var _ref;
-				return (_ref = this.collection) != null ? _ref.remove(this) : void 0;
-			});
+		Model.prototype.beforeDispose = function() {
+			var _ref;
+			return (_ref = this.collection) != null ? _ref.remove(this) : void 0;
 		};
 
 		return Model;
@@ -1504,11 +1570,14 @@
 	Giraffe.Collection = (function(_super) {
 		__extends(Collection, _super);
 
+		Collection.defaultOptions = {
+			omittedOptions: 'parse'
+		};
+
 		Collection.prototype.model = Giraffe.Model;
 
 		function Collection(models, options) {
-			this.app || (this.app = (options != null ? options.app : void 0) || Giraffe.app);
-			Giraffe.bindEventMap(this, this.app, this.appEvents);
+			Giraffe.configure(this, options);
 			Collection.__super__.constructor.apply(this, arguments);
 		}
 
@@ -1520,21 +1589,19 @@
 		Collection.prototype.appEvents = null;
 
 		/*
-		 * Removes event listeners and disposes of all models, which removes them from the collection.
+		 * Removes event listeners and disposes of all models, which removes them from
+		 * the collection.
 		 */
 
 
-		Collection.prototype.dispose = function() {
-			return Giraffe.dispose(this, function() {
-				var model, _i, _len, _ref, _results;
-				_ref = this.models;
-				_results = [];
-				for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-					model = _ref[_i];
-					_results.push(model.dispose());
-				}
-				return _results;
-			});
+		Collection.prototype.beforeDispose = function() {
+			var model, _i, _len, _ref;
+			_ref = this.models.slice();
+			for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+				model = _ref[_i];
+				model.dispose();
+			}
+			return this;
 		};
 
 		return Collection;
@@ -1542,35 +1609,199 @@
 	})(Backbone.Collection);
 
 	/*
-	 * Disposes of a object. Calls `Backbone.Events#stopListening` and sets `obj.app` to null. Also triggers `'disposing'` and `'disposed'` events on `obj` before and after the disposal. Takes an optional `fn` argument to do additional work, and optional `args` that are passed through to the events and `fn`.
+	 * Initializes an object with several generic features.
+	 * All __Giraffe__ objects call this function in their constructors to gain much
+	 * of their functionality.
+	 * Uses duck typing to initialize features when dependencies are met.
 	 *
-	 * @param {Object} obj The object to dispose.
-	 * @param {Function} [fn] A callback to perform additional work in between the `'disposing'` and `'disposed'` events.
-	 * @param {Any} [args...] A list of arguments to by passed to the `fn` and disposal events.
+	 * Features:
+	 *
+	 * - -pulls option defaults from the global `Giraffe.defaultOptions`, the static `obj.constructor.defaultOptions`, and the instance/prototype `obj.defaultOptions`
+	 * - -extends the object with all options minus `omittedOptions` (omits all if `true`)
+	 * - -defaults `obj.dispose` to `Giraffe.disposeThis`
+	 * - -defaults `obj.app` to `Giraffe.app`
+	 * - -binds `appEvents` if `appEvents` and `app` are defined and `obj` extends `Backbone.Events`
+	 * - -binds `dataEvents` if `dataEvents` is defined and `obj` extends `Backbone.Events`
+	 * - -wraps `initialize` with `beforeInitialize` and `afterInitialize` if it exists
+	 *
+	 * @param {Object} obj Any object.
+	 * @param {Obj} [opts] Extended along with `defaultOptions` onto `obj` minus `options.omittedOptions`. If `options.omittedOptions` is true, all are omitted.
 	 */
 
 
-	Giraffe.dispose = function() {
-		var args, fn, obj;
-		obj = arguments[0], fn = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
-		if (typeof obj.trigger === "function") {
-			obj.trigger.apply(obj, ['disposing', obj].concat(__slice.call(args)));
+	Giraffe.configure = function(obj, opts) {
+		var omittedOptions, options, _ref, _ref1;
+		if (!obj) {
+			error("Cannot configure obj", obj);
+			return false;
 		}
-		if (fn != null) {
-			fn.apply(obj, args);
+		options = _.extend({}, Giraffe.defaultOptions, (_ref = obj.constructor) != null ? _ref.defaultOptions : void 0, obj.defaultOptions, opts);
+		omittedOptions = (_ref1 = options.omittedOptions) != null ? _ref1 : obj.omittedOptions;
+		if (omittedOptions !== true) {
+			_.extend(obj, _.omit(options, omittedOptions));
 		}
-		if (typeof obj.stopListening === "function") {
-			obj.stopListening();
+		if (obj.dispose == null) {
+			obj.dispose = Giraffe.disposeThis;
 		}
-		obj.app = null;
-		if (typeof obj.trigger === "function") {
-			obj.trigger.apply(obj, ['disposed', obj].concat(__slice.call(args)));
+		if (obj.app == null) {
+			obj.app = Giraffe.app;
+		}
+		if (obj.appEvents) {
+			Giraffe.bindAppEvents(obj);
+		}
+		if (obj.initialize) {
+			Giraffe.wrapFn(obj, 'initialize', null, _afterInitialize);
+		} else {
+			_afterInitialize.call(obj);
 		}
 		return obj;
 	};
 
 	/*
-	 * Uses `Backbone.Events.listenTo` to make `contextObj` listen for `eventName` on `targetObj` with the callback `cb`, which can be a function or the string name of a method on `contextObj`.
+	 * The global defaults extended to every object passed to `Giraffe.configure`.
+	 * Empty by default.
+	 * Setting `omittedOptions` here globally prevents those properties from being
+	 * copied over, and if its value is `true` extension is completely disabled.
+	 *
+	 *     function Foo() {
+	 *       Giraffe.configure(this);
+	 *     };
+	 *     Giraffe.defaultOptions = {bar: 'global'};
+	 *     var foo = new Foo();
+	 *     foo.bar; // => 'global'
+	 *
+	 * You can also define `defaultOptions` on a function constructor.
+	 * These override the global defaults.
+	 *
+	 *     Foo.defaultOptions = {bar: 'constructor'};
+	 *     foo = new Foo();
+	 *     foo.bar; // => 'constructor'
+	 *
+	 * The instance/prototype defaults take even higher precedence:
+	 *
+	 *     Foo.prototype.defaultOptions = {bar: 'instance/prototype'};
+	 *     foo = new Foo();
+	 *     foo.bar; // => 'instance/prototype'
+	 *
+	 * Options passed as arguments always override `defaultOptions`.
+	 *
+	 *     foo = new Foo({bar: 'option'});
+	 *     foo.bar; // => 'option'
+	 *
+	 * Be aware that the values of all `defaultOptions` are not cloned when copied over.
+	 *
+	 * @caption Giraffe.defaultOptions
+	 */
+
+
+	Giraffe.defaultOptions = {};
+
+	_afterInitialize = function() {
+		if (this.dataEvents) {
+			return Giraffe.bindDataEvents(this);
+		}
+	};
+
+	/*
+	 * Disposes of an object, removing event listeners and freeing resources.
+	 * An instance method of `dispose` is added for
+	 * all objects passed through `Giraffe.configure`, and so you will normally
+	 * call `dispose` directly on your objects.
+	 *
+	 * Calls `Backbone.Events#stopListening` and sets
+	 * `obj.app` to null. Also triggers the `'disposing'` and `'disposed'` events
+	 * and calls the `beforeDispose` and `afterDispose` methods on `obj` before and
+	 * after the disposal. Takes optional `args` that are passed through to the
+	 * events and the function calls.
+	 *
+	 * @param {Object} obj The object to dispose.
+	 * @param {Any} [args...] A list of arguments to by passed to the `fn` and disposal events.
+	 */
+
+
+	Giraffe.dispose = function() {
+		var args, obj;
+		obj = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+		if (typeof obj.trigger === "function") {
+			obj.trigger.apply(obj, ['disposing', obj].concat(__slice.call(args)));
+		}
+		if (typeof obj.beforeDispose === "function") {
+			obj.beforeDispose.apply(obj, args);
+		}
+		obj.app = null;
+		if (typeof obj.stopListening === "function") {
+			obj.stopListening();
+		}
+		if (typeof obj.trigger === "function") {
+			obj.trigger.apply(obj, ['disposed', obj].concat(__slice.call(args)));
+		}
+		if (typeof obj.afterDispose === "function") {
+			obj.afterDispose.apply(obj, args);
+		}
+		return obj;
+	};
+
+	/*
+	 * Calls `Giraffe.dispose` on `this`.
+	 * Added to avoid breaking changes to `Giraffe.dispose` when `Giraffe.configure` was added in v0.1.4.
+	 * Perhaps this function should be removed and `Giraffe.dispose` changed to operate on `this`.
+	 */
+
+
+	Giraffe.disposeThis = function() {
+		var args;
+		args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+		return Giraffe.dispose.apply(Giraffe, [this].concat(__slice.call(args)));
+	};
+
+	/*
+	 * Attempts to bind `appEvents` for an object. Called by `Giraffe.configure`.
+	 */
+
+
+	Giraffe.bindAppEvents = function(obj) {
+		return Giraffe.bindEventMap(obj, obj.app, obj.appEvents);
+	};
+
+	/*
+	 * Binds the `dataEvents` hash that allows any instance property of `obj` to
+	 * be bound to easily. Expects the form {'event1 event2 targetObj': 'handler'}.
+	 * Called by `Giraffe.configure`.
+	 */
+
+
+	Giraffe.bindDataEvents = function(obj) {
+		var cb, dataEvents, eventKey, eventName, pieces, targetObj;
+		dataEvents = obj.dataEvents;
+		if (!dataEvents) {
+			return;
+		}
+		if (typeof dataEvents === 'function') {
+			dataEvents = obj.dataEvents();
+		}
+		for (eventKey in dataEvents) {
+			cb = dataEvents[eventKey];
+			pieces = eventKey.split(' ');
+			if (pieces.length < 2) {
+				error('Data event must specify target object, ex: {\'change collection\': \'handler\'}');
+				continue;
+			}
+			targetObj = pieces.pop();
+			targetObj = targetObj === 'this' || targetObj === '@' ? obj : obj[targetObj];
+			if (!targetObj) {
+				error("Target object not found for data event '" + eventKey + "'", obj);
+				continue;
+			}
+			eventName = pieces.join(' ');
+			Giraffe.bindEvent(obj, targetObj, eventName, cb);
+		}
+		return obj;
+	};
+
+	/*
+	 * Uses `Backbone.Events.listenTo` to make `contextObj` listen for `eventName` on
+	 * `targetObj` with the callback `cb`, which can be a function or the string name
+	 * of a method on `contextObj`.
 	 *
 	 * @param {Backbone.Events} contextObj The object doing the listening.
 	 * @param {Backbone.Events} targetObj The object to listen to.
@@ -1582,7 +1813,8 @@
 	Giraffe.bindEvent = function() {
 		var args;
 		args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-		return _setEventBindings.apply(null, args.concat('listenTo'));
+		args.push('listenTo');
+		return _setEventBindings.apply(null, args);
 	};
 
 	/*
@@ -1598,11 +1830,14 @@
 	Giraffe.unbindEvent = function() {
 		var args;
 		args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-		return _setEventBindings.apply(null, args.concat('stopListening'));
+		args.push('stopListening');
+		return _setEventBindings.apply(null, args);
 	};
 
 	/*
-	 * Makes `contextObj` listen to `targetObj` for the events of `eventMap` in the form `eventName: method`, where `method` is a function or the name of a function on `contextObj`.
+	 * Makes `contextObj` listen to `targetObj` for the events of `eventMap` in the
+	 * form `eventName: method`, where `method` is a function or the name of a
+	 * function on `contextObj`.
 	 *
 	 *     Giraffe.bindEventMap(this, this.app, this.appEvents);
 	 *
@@ -1615,7 +1850,8 @@
 	Giraffe.bindEventMap = function() {
 		var args;
 		args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-		return _setEventMapBindings.apply(null, args.concat('listenTo'));
+		args.push('listenTo');
+		return _setEventMapBindings.apply(null, args);
 	};
 
 	/*
@@ -1630,13 +1866,11 @@
 	Giraffe.unbindEventMap = function() {
 		var args;
 		args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-		return _setEventMapBindings.apply(null, args.concat('stopListening'));
+		args.push('stopListening');
+		return _setEventMapBindings.apply(null, args);
 	};
 
 	_setEventBindings = function(contextObj, targetObj, eventName, cb, bindOrUnbindFnName) {
-		if (!(targetObj && contextObj && eventName && bindOrUnbindFnName)) {
-			return;
-		}
 		if (typeof cb === 'string') {
 			cb = contextObj[cb];
 		}
@@ -1650,7 +1884,7 @@
 	_setEventMapBindings = function(contextObj, targetObj, eventMap, bindOrUnbindFnName) {
 		var cb, eventName;
 		if (typeof eventMap === 'function') {
-			eventMap = eventMap();
+			eventMap = eventMap.call(contextObj);
 		}
 		if (!eventMap) {
 			return;
@@ -1659,7 +1893,45 @@
 			cb = eventMap[eventName];
 			_setEventBindings(contextObj, targetObj, eventName, cb, bindOrUnbindFnName);
 		}
-		return null;
+		return contextObj;
+	};
+
+	/*
+	 * Wraps `obj[fnName]` with `beforeFnName` and `afterFnName` invocations. Also
+	 * calls the optional arguments `beforeFn` and `afterFn`.
+	 *
+	 * @param {Object} obj
+	 * @param {String} fnName
+	 * @param {Function} [beforeFn]
+	 * @param {Function} [afterFn]
+	 */
+
+
+	Giraffe.wrapFn = function(obj, fnName, beforeFn, afterFn) {
+		var capFnName, fn;
+		fn = obj[fnName];
+		if (typeof fn !== 'function') {
+			return;
+		}
+		capFnName = fnName[0].toUpperCase() + fnName.slice(1);
+		return obj[fnName] = function() {
+			var args, result, _name, _name1;
+			args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+			if (beforeFn != null) {
+				beforeFn.apply(obj, args);
+			}
+			if (typeof obj[_name = 'before' + capFnName] === "function") {
+				obj[_name].apply(obj, args);
+			}
+			result = fn.apply(obj, args);
+			if (typeof obj[_name1 = 'after' + capFnName] === "function") {
+				obj[_name1].apply(obj, args);
+			}
+			if (afterFn != null) {
+				afterFn.apply(obj, args);
+			}
+			return result;
+		};
 	};
 
 }).call(this);
